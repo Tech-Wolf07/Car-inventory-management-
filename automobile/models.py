@@ -1,34 +1,39 @@
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
 
 class Inventory(models.Model):
-    cid = models.AutoField(primary_key=True)
     car_name = models.CharField(max_length=20)
-    colour = models.CharField(max_length=20, default=None)
-    no_of_owner = models.IntegerField(default=None)
-    kms_driven = models.IntegerField(default=None)
-    passing_till = models.DateField(default=None)
-    insuarance_till = models.DateField(default=None)
-    plate_no = models.CharField(unique=True,default=None)
-    status = models.CharField(choices=[('sale','For Sale'),('buy','For Buy')])
-    year = models.DateField(default=None)
-    condition = models.TextField(default=None)
-    total_expenses =models.CharField(default=0) 
+    colour = models.CharField(max_length=20, blank=True, null=True)
+    no_of_owner = models.IntegerField(blank=True, null=True)
+    kms_driven = models.IntegerField(blank=True, null=True)
+    passing_till = models.DateField(blank=True, null=True)
+    insuarance_till = models.DateField(blank=True, null=True)
+    plate_no = models.CharField(max_length=15, unique=True, blank=True, null=True)
+    status = models.CharField(max_length=10, choices=[('sale', 'For Sale'), ('buy', 'For Buy')])
+    year = models.DateField(blank=True, null=True)
+    condition = models.TextField(blank=True, null=True)
+    total_expenses = models.IntegerField(null=True,blank=True)
     profit = models.IntegerField(default=0)
 
-    def __str__(self):
-        return f'{self.car_name}'
-
-class Expensens(models.Model):
-    cid = models.ForeignKey(Inventory, on_delete=models.CASCADE)
+class Expenses(models.Model):
+    inventory_id = models.ForeignKey(Inventory, on_delete=models.CASCADE, related_name='expenses')
     title = models.CharField(max_length=50)
-    description = models.CharField(max_length=50,null=True)
-    amount = models.BigIntegerField(default=0)
-    image_URL = models.ImageField(null=True,blank=True)
+    description = models.CharField(max_length=50, blank=True, null=True)
+    amount = models.BigIntegerField(null=True,blank=True)
+    image_URL = models.ImageField(blank=True, null=True)
+
+# Signal moved outside the class definition
+# @receiver([post_save, post_delete], sender=Expenses)
+# def update_total_expenses(sender, instance, **kwargs):
+#     inventory = instance.inventory_id
+#     total = inventory.expenses.aggregate(total=models.Sum('amount'))['total'] or 0
+#     inventory.total_expenses = total
+#     inventory.save()
 
 class Persons(models.Model):
     name = models.CharField(max_length=20)
     mob_no = models.IntegerField()
     address = models.CharField(max_length=50)
-    p_type = models.CharField(choices=[('customer','Customer'),('dealer','Dealer')],default=None)
-
-
+    p_type = models.CharField(max_length=10, choices=[('customer', 'Customer'), ('dealer', 'Dealer')], default='customer')

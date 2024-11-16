@@ -79,8 +79,8 @@ WSGI_APPLICATION = 'cbm.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mydb',
-        'USER': 'postgres',
+        'NAME': 'postgres',
+        'USER': 'macbook',
         'PASSWORD': '0000',
         'HOST': 'localhost',  # Set to the PostgreSQL server address
         'PORT': '5432', 

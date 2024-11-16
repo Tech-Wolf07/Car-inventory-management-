@@ -1,38 +1,17 @@
-"""
-URL configuration for cim project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path,include
-from automobile import views
-from django.conf import settings
+from automobile.views import InventoryListCreateView, InventoryDetailView,ExpenseCreateList,ExpenseUpdateDelete,ExpensesByInventoryView
+from django.urls import path
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # cars routes
-    path('add/car/',views.addCar),
-    path('cars/',views.getCars),
-    path('update/car/<int:cid>',views.updateCar), # cid is every car's primary key
-    path('delete/car/<int:cid>',views.deleteCar),
-
+    path('inventory/', InventoryListCreateView.as_view(), name='inventory_list_create'),
+    path('inventory/<int:pk>', InventoryDetailView.as_view(), name='inventory_detail'),
     
-    # expenses routes
-    path('add/expense/<int:cid>',views.addExpense),
-    path('expenses/<int:cid>',views.getExpenses), 
-    path('update/expense/<int:cid>',views.updateExpense),
-    path('delete/expense/<int:cid>',views.deleteExpense),
+    path('expense/', ExpenseCreateList.as_view(), name='expense_create_list'),
+    path('expense/<int:pk>', ExpenseUpdateDelete.as_view(), name='expense_detail'),
+    path('expenses/inventory/<int:inventory_id>/', ExpensesByInventoryView.as_view(), name='expenses-by-inventory'),
 
 ]

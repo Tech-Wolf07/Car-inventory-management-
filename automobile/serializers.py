@@ -1,18 +1,19 @@
 # serializers.py
 from rest_framework import serializers
-from .models import Inventory, Expensens
+from .models import Inventory, Expenses
 
 class InventorySerializer(serializers.ModelSerializer):
+    calculated_total_expenses = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)  # Read-only field
+
     class Meta:
         model = Inventory
-        fields = ['car_name', 'colour', 'no_of_owner','kms_driven','passing_till','insuarance_till', 'plate_no', 'status', 'year','condition','total_expenses','profit']  
+        fields = '__all__'
 
-    def create(self, validated_data):
-        return Inventory.objects.create(**validated_data)
     
 class ExpensesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Expensens
-        fields = ['cid','exp_name','description','total_amt']
+        model = Expenses
+        fields = ['id', 'inventory_id', 'title', 'description', 'amount', 'image_URL']
+
 
 

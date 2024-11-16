@@ -1,69 +1,102 @@
-from django.shortcuts import render,get_object_or_404
-from .models import Inventory,Expensens
-from django.http import HttpResponse, request, JsonResponse
-from rest_framework.response import Response 
-from rest_framework.decorators import api_view
+from .models import Inventory, Expenses
 from .serializers import InventorySerializer, ExpensesSerializer
-from rest_framework import generics
+from rest_framework import generics,status
+from rest_framework.response import Response
+from django.db.models import Sum
+from rest_framework.generics import ListAPIView
 
 
-# ====================================================
-# cars views
-
-@api_view(['POST'])
-def addCar(request):
-    serializer = InventorySerializer(data = request.data)
+# Generic Views
+# List and Create Inventory items
+class InventoryListCreateView(generics.ListCreateAPIView):
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
     
-    if serializer.is_valid() == False:
-        return Response(serializer.errors)
-
-    serializer.save()
-    return Response("Successfully Added a Car!")
+    def get_queryset(self):
+         queryset = super().get_queryset()
+         queryset = queryset.annotate(calculated_total_expenses = Sum('expenses__amount', filter=~Q(expenses__amount=0)))
+         return queryset
     
     
-@api_view(['GET'])
-def getCars(resquest):
-    data = list(Inventory.objects.values())
-    return JsonResponse(data,safe=False)
-
-
-@api_view(['PUT'])
-def updateCar(resquest):
-    data = list(Inventory.objects.values())
-    return JsonResponse(data,safe=False)
-
-
-@api_view(['DELETE'])
-def deleteCar(resquest):
-    data = list(Inventory.objects.values())
-    return JsonResponse(data,safe=False)
-
-# ====================================================
-# expense views
-
-@api_view(['POST'])
-def addExpense(request):
-    serializer = InventorySerializer(data=request.data)
-    if serializer.is_valid():
-         serializer.save()
-         return Response(serializer.data)
-    else:
-        return Response(serializer.errors)
+class InventoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
     
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(
+            {"message": f"Inventory  has been deleted."},
+            status=status.HTTP_200_OK
+        )
+    
+# def destroy(self, request, *args, **kwargs):
+#     # Get the object to delete
+#     instance = self.get_object()
+#     self.perform_destroy(instance)
+    
+#     try:
+#         with connection.cursor() as cursor:
+#             # Reassign IDs (this part was correct)
+#             cursor.execute("""
+#                 WITH CTE AS (
+#                     SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS new_id
+#                     FROM automobile_inventory
+#                 )
+#                 UPDATE automobile_inventory
+#                 SET id = CTE.new_id
+#                 FROM CTE
+#                 WHERE automobile_inventory.id = CTE.id;
+#             """)
 
-@api_view(['GET'])
-def getExpenses(request):
-   expenses = Expensens.objects.all()
-   serializer = ExpensesSerializer(expenses, many=True)
-   return Response(serializer.data)
+#             # Reset the sequence (this is critical)
+#             cursor.execute("""
+#                 DO $$
+#                 DECLARE
+#                     max_id INT;
+#                 BEGIN
+#                     -- Get the maximum ID from the table
+#                     SELECT MAX(id) INTO max_id FROM automobile_inventory;
 
-@api_view(['PUT'])
-def updateExpense(resquest):
-    data = list(Inventory.objects.values())
-    return JsonResponse(data,safe=False)
+#                     -- If there are no records, start the sequence at 1
+#                     IF max_id IS NULL THEN
+#                         max_id := 1;
+#                     END IF;
+
+#                     -- Reset the sequence for 'id' based on max_id
+#                     PERFORM setval(pg_get_serial_sequence('automobile_inventory', 'id'), max_id, false);
+#                 END $$;
+#             """)
+
+#         # Return the success response
+#         return Response({"message": "Inventory item deleted and IDs reset!"}, status=status.HTTP_200_OK)
+
+#     except Exception as e:
+#         return Response({"error": f"Failed to reset IDs: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['DELETE'])
-def deleteExpense(resquest):
-    data = list(Inventory.objects.values())
-    return JsonResponse(data,safe=False)
+# ----------------------------------------------------------------------------------
+
+class ExpenseCreateList(generics.ListCreateAPIView):
+    queryset = Expenses.objects.all()
+    serializer_class = ExpensesSerializer
+
+    
+# Retrieve, Update, and Delete a single expense 
+class ExpenseUpdateDelete(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Expenses.objects.all()
+    serializer_class = ExpensesSerializer 
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response( {"message": "Expense  has been deleted."}, status=status.HTTP_200_OK )
+    
+    # Delete expense with inventory_id
+class ExpensesByInventoryView(ListAPIView):
+        queryset = Expenses.objects.all()
+        serializer_class = ExpensesSerializer
+
+def get_queryset(self):
+    inventory_id = self.kwargs.get('inventory_id')  # Extract inventory_id from the URL
+    return Expenses.objects.filter(inventory_id=inventory_id)
